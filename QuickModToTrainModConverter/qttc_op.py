@@ -1,6 +1,7 @@
 import os
 import bpy
 import random
+import zipfile
 from bpy.types import Operator
 
 class QTTC_OT_Convert(Operator):
@@ -483,7 +484,7 @@ class QTTC_OT_Convert(Operator):
 				"lockToWagonBody": {"true" if modpivotparent == str(i) else "false"}
 			}}''')
         
-        keatext.write(fr'''
+        keatext.write(f'''
 		],
 		"couplerData": [
 			{{
@@ -787,5 +788,22 @@ class QTTC_OT_Convert(Operator):
 }}''')
 
         keatext.close()
+	    
+        lqm = os.path.join(self.directory, "legacyQuickMod.kea")
+        mtx = os.path.join(self.directory, "mod.txt")
+        print(True)
+        with zipfile.ZipFile(os.path.join(self.directory, "backup.zip"), 'w') as zip:
+            if os.path.exists(lqm):
+                zip.write(lqm)
+                os.remove(lqm)
+            if os.path.exists(mtx):
+                zip.write(mtx)
+                os.remove(mtx)
+
+        os.rename(self.directory, \
+			os.path.join( \
+				os.path.dirname( \
+					os.path.dirname(self.directory)), \
+						f"wagon_{modname}_{keaid}"))
 
         return {'FINISHED'}

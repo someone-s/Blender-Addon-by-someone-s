@@ -16,7 +16,7 @@ bl_info = {
     "author" : "Eden",
     "description" : "",
     "blender" : (3, 0, 0),
-    "version" : (0, 0, 1),
+    "version" : (0, 0, 3),
     "location" : "",
     "warning" : "",
     "category" : "Generic"
