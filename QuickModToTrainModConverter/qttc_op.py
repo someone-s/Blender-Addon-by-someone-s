@@ -2,6 +2,7 @@ import os
 import bpy
 import random
 import zipfile
+import math
 from bpy.types import Operator
 
 class QTTC_OT_Convert(Operator):
@@ -16,6 +17,38 @@ class QTTC_OT_Convert(Operator):
         return {'RUNNING_MODAL'}
 
     def execute(self, convert):
+        musthave = [
+            "quickMod_model_couple_back.obj",
+            "quickMod_model_couple_front.obj",
+            "quickMod_model_wheels_back.obj",
+            "quickMod_model_wheels_front.obj"]
+        for i in musthave:
+            if not os.path.exists(os.path.join(self.directory, i)):
+                self.report(type='ERROR_INVALID_CONTEXT', message="missing one or more file")
+                return 'CANCELLED'
+
+        bpy.ops.object.mode_set(mode='OBJECT')
+        if len(bpy.context.visible_objects) > 0:
+            self.report(type='ERROR_INVALID_CONTEXT', message="scene contains objects")
+            return 'CANCELLED'
+        
+        bpy.context.scene.tool_settings.transform_pivot_point = 'CURSOR'
+        bpy.ops.view3d.snap_cursor_to_center()
+        
+        cbf = os.path.join(self.directory, "quickMod_model_couple_back.obj")
+        bpy.ops.import_scene.obj(filepath=cbf)
+        bpy.ops.action.select_all()
+        bpy.ops.transform.rotate(value=math.pi)
+        bpy.ops.export_scene.obj(filepath=cbf)
+        bpy.ops.action.delete()
+        
+        cff = os.path.join(self.directory, "quickMod_model_couple_front.obj")
+        bpy.ops.import_scene.obj(filepath=cff)
+        bpy.ops.action.select_all()
+        bpy.ops.transform.rotate(value=math.pi)
+        bpy.ops.export_scene.obj(filepath=cff)
+        bpy.ops.action.delete()
+
         bodypath = os.path.join(self.directory, "quickMod_model_body.obj")
         bodyindices = []
         bodyindex = 0
@@ -57,7 +90,7 @@ class QTTC_OT_Convert(Operator):
         modpresetaltoffset = "0"
         modpresetparent = "0"
         modpresetaltparent = "1"
-        modcoupleroffset = "0.07000000029802323"
+        modcoupleroffset = "0.075"
         modwheeloffsets = {}
         modpivotparent = "0"
         modpivotoffset = "0"
@@ -95,7 +128,7 @@ class QTTC_OT_Convert(Operator):
             elif l.startswith('wheelPresetAltParentIndex '):
                 modpresetaltparent = l.removeprefix('wheelPresetAltParentIndex ').removesuffix('\n')
             elif l.startswith('couplerOffset '):
-                modcoupleroffset = l.removeprefix('couplerOffset ').removesuffix('\n')
+                modcoupleroffset = str(float(l.removeprefix('couplerOffset ').removesuffix('\n')) * 0.001)
             elif l.startswith('wheelOffset'):
                 t = l.removeprefix('wheeloffset').removesuffix('\n').split()
                 modwheeloffsets[int(t[0])] = t[1]
@@ -213,585 +246,584 @@ class QTTC_OT_Convert(Operator):
 
         for i in bodyindices:
             keatext.write(f'''
-				{{
-					"name": "{i}",
-					"mesh": {{
-						"m_FileID": 0,
-						"m_PathID": 0
-					}},
-					"meshRef": {{
-						"assetName": "quickMod_model_body{i if i != 0 else ""}.obj",
-						"variantOriginalAssetName": "None",
-						"useVariantOriginalAsset": false
-					}},
-					"materialType": {materialmap[modmaterials[i]]},
-					"material": {{
-						"m_FileID": 0,
-						"m_PathID": 0
-					}},
-					"castShadows": true,
-					"texture": {{
-						"m_FileID": 0,
-						"m_PathID": 0
-					}},
-					"textureRef": {{
-						"assetName": "{texturemap[i]}",
-						"variantOriginalAssetName": "None",
-						"useVariantOriginalAsset": false
-					}},
-					"colorCode": {{
-						"m_FileID": 0,
-						"m_PathID": 0
-					}},
-					"colorCodeRef": {{
-						"colorCodeRaw": ""
-					}},
-					"paintable": false,
-					"animation": {{
-						"clipIndex": 0,
-						"wrapMode": 2,
-						"playSpeed": 1.0
-					}},
-					"useLegacyModelInvert": false
-				}}{"" if i == bodyindices[-1] else ","}''')
+                {{
+                    "name": "{i}",
+                    "mesh": {{
+                        "m_FileID": 0,
+                        "m_PathID": 0
+                    }},
+                    "meshRef": {{
+                        "assetName": "quickMod_model_body{i if i != 0 else ""}.obj",
+                        "variantOriginalAssetName": "None",
+                        "useVariantOriginalAsset": false
+                    }},
+                    "materialType": {materialmap[modmaterials[i]]},
+                    "material": {{
+                        "m_FileID": 0,
+                        "m_PathID": 0
+                    }},
+                    "castShadows": true,
+                    "texture": {{
+                        "m_FileID": 0,
+                        "m_PathID": 0
+                    }},
+                    "textureRef": {{
+                        "assetName": "{texturemap[i]}",
+                        "variantOriginalAssetName": "None",
+                        "useVariantOriginalAsset": false
+                    }},
+                    "colorCode": {{
+                        "m_FileID": 0,
+                        "m_PathID": 0
+                    }},
+                    "colorCodeRef": {{
+                        "colorCodeRaw": ""
+                    }},
+                    "paintable": false,
+                    "animation": {{
+                        "clipIndex": 0,
+                        "wrapMode": 2,
+                        "playSpeed": 1.0
+                    }},
+                    "useLegacyModelInvert": true
+                }}{"" if i == bodyindices[-1] else ","}''')
         
 
         keatext.write(f'''
             ],
-			"trackTexturePaintable": false
-		}},
-		"wheelData": [
-			{{
-				"detailName": "Back wheels",
-				"usePreset": false,
-				"modPresetName": "wheelPreset_freight_default",
-				"preset": {{
-					"m_FileID": 0,
-					"m_PathID": 0
-				}},
-				"presetTextureOverride": {{
-					"assetName": "None",
-					"variantOriginalAssetName": "None",
-					"useVariantOriginalAsset": false
-				}},
-				"materialOverride": {{
-					"m_FileID": 0,
-					"m_PathID": 0
-				}},
-				"customModel": {{
-					"meshes": [
-						{{
-							"name": "Main",
-							"mesh": {{
-								"m_FileID": 0,
-								"m_PathID": 0
-							}},
-							"meshRef": {{
-								"assetName": "quickMod_model_wheels_back.obj",
-								"variantOriginalAssetName": "None",
-								"useVariantOriginalAsset": false
-							}},
-							"materialType": 0,
-							"material": {{
-								"m_FileID": 0,
-								"m_PathID": 0
-							}},
-							"castShadows": true,
-							"texture": {{
-								"m_FileID": 0,
-								"m_PathID": 0
-							}},
-							"textureRef": {{
-								"assetName": "quickMod_texture.png",
-								"variantOriginalAssetName": "None",
-								"useVariantOriginalAsset": false
-							}},
-							"colorCode": {{
-								"m_FileID": 0,
-								"m_PathID": 0
-							}},
-							"colorCodeRef": {{
-								"colorCodeRaw": ""
-							}},
-							"paintable": false,
-							"animation": {{
-								"clipIndex": 0,
-								"wrapMode": 2,
-								"playSpeed": 1.0
-							}},
-							"useLegacyModelInvert": false
-						}}
-					],
-					"trackTexturePaintable": false
-				}},
-				"modelPosOffset": {{
-					"x": 0.0,
-					"y": 0.0,
-					"z": 0.0
-				}},
-				"wheelPosition": 0,
-				"customLength": 2.0,
-				"flipModel": false,
-				"lockToWagonBody": false
-			}},
-			{{
-				"detailName": "Front wheels",
-				"usePreset": false,
-				"modPresetName": "wheelPreset_freight_default",
-				"preset": {{
-					"m_FileID": 0,
-					"m_PathID": 0
-				}},
-				"presetTextureOverride": {{
-					"assetName": "None",
-					"variantOriginalAssetName": "None",
-					"useVariantOriginalAsset": false
-				}},
-				"materialOverride": {{
-					"m_FileID": 0,
-					"m_PathID": 0
-				}},
-				"customModel": {{
-					"meshes": [
-						{{
-							"name": "Main",
-							"mesh": {{
-								"m_FileID": 0,
-								"m_PathID": 0
-							}},
-							"meshRef": {{
-								"assetName": "quickMod_model_wheels_front.obj",
-								"variantOriginalAssetName": "None",
-								"useVariantOriginalAsset": false
-							}},
-							"materialType": 0,
-							"material": {{
-								"m_FileID": 0,
-								"m_PathID": 0
-							}},
-							"castShadows": true,
-							"texture": {{
-								"m_FileID": 0,
-								"m_PathID": 0
-							}},
-							"textureRef": {{
-								"assetName": "quickMod_texture.png",
-								"variantOriginalAssetName": "None",
-								"useVariantOriginalAsset": false
-							}},
-							"colorCode": {{
-								"m_FileID": 0,
-								"m_PathID": 0
-							}},
-							"colorCodeRef": {{
-								"colorCodeRaw": ""
-							}},
-							"paintable": false,
-							"animation": {{
-								"clipIndex": 0,
-								"wrapMode": 2,
-								"playSpeed": 1.0
-							}},
-							"useLegacyModelInvert": false
-						}}
-					],
-					"trackTexturePaintable": false
-				}},
-				"modelPosOffset": {{
-					"x": 0.0,
-					"y": 0.0,
-					"z": 0.0
-				}},
-				"wheelPosition": 1,
-				"customLength": 2.0,
-				"flipModel": false,
-				"lockToWagonBody": false
-			}}''')
+            "trackTexturePaintable": false
+        }},
+        "wheelData": [
+            {{
+                "detailName": "Back wheels",
+                "usePreset": false,
+                "modPresetName": "wheelPreset_freight_default",
+                "preset": {{
+                    "m_FileID": 0,
+                    "m_PathID": 0
+                }},
+                "presetTextureOverride": {{
+                    "assetName": "None",
+                    "variantOriginalAssetName": "None",
+                    "useVariantOriginalAsset": false
+                }},
+                "materialOverride": {{
+                    "m_FileID": 0,
+                    "m_PathID": 0
+                }},
+                "customModel": {{
+                    "meshes": [
+                        {{
+                            "name": "Main",
+                            "mesh": {{
+                                "m_FileID": 0,
+                                "m_PathID": 0
+                            }},
+                            "meshRef": {{
+                                "assetName": "quickMod_model_wheels_back.obj",
+                                "variantOriginalAssetName": "None",
+                                "useVariantOriginalAsset": false
+                            }},
+                            "materialType": 0,
+                            "material": {{
+                                "m_FileID": 0,
+                                "m_PathID": 0
+                            }},
+                            "castShadows": true,
+                            "texture": {{
+                                "m_FileID": 0,
+                                "m_PathID": 0
+                            }},
+                            "textureRef": {{
+                                "assetName": "quickMod_texture.png",
+                                "variantOriginalAssetName": "None",
+                                "useVariantOriginalAsset": false
+                            }},
+                            "colorCode": {{
+                                "m_FileID": 0,
+                                "m_PathID": 0
+                            }},
+                            "colorCodeRef": {{
+                                "colorCodeRaw": ""
+                            }},
+                            "paintable": false,
+                            "animation": {{
+                                "clipIndex": 0,
+                                "wrapMode": 2,
+                                "playSpeed": 1.0
+                            }},
+                            "useLegacyModelInvert": true
+                        }}
+                    ],
+                    "trackTexturePaintable": false
+                }},
+                "modelPosOffset": {{
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                }},
+                "wheelPosition": 0,
+                "customLength": 2.0,
+                "flipModel": true,
+                "lockToWagonBody": false
+            }},
+            {{
+                "detailName": "Front wheels",
+                "usePreset": false,
+                "modPresetName": "wheelPreset_freight_default",
+                "preset": {{
+                    "m_FileID": 0,
+                    "m_PathID": 0
+                }},
+                "presetTextureOverride": {{
+                    "assetName": "None",
+                    "variantOriginalAssetName": "None",
+                    "useVariantOriginalAsset": false
+                }},
+                "materialOverride": {{
+                    "m_FileID": 0,
+                    "m_PathID": 0
+                }},
+                "customModel": {{
+                    "meshes": [
+                        {{
+                            "name": "Main",
+                            "mesh": {{
+                                "m_FileID": 0,
+                                "m_PathID": 0
+                            }},
+                            "meshRef": {{
+                                "assetName": "quickMod_model_wheels_front.obj",
+                                "variantOriginalAssetName": "None",
+                                "useVariantOriginalAsset": false
+                            }},
+                            "materialType": 0,
+                            "material": {{
+                                "m_FileID": 0,
+                                "m_PathID": 0
+                            }},
+                            "castShadows": true,
+                            "texture": {{
+                                "m_FileID": 0,
+                                "m_PathID": 0
+                            }},
+                            "textureRef": {{
+                                "assetName": "quickMod_texture.png",
+                                "variantOriginalAssetName": "None",
+                                "useVariantOriginalAsset": false
+                            }},
+                            "colorCode": {{
+                                "m_FileID": 0,
+                                "m_PathID": 0
+                            }},
+                            "colorCodeRef": {{
+                                "colorCodeRaw": ""
+                            }},
+                            "paintable": false,
+                            "animation": {{
+                                "clipIndex": 0,
+                                "wrapMode": 2,
+                                "playSpeed": 1.0
+                            }},
+                            "useLegacyModelInvert": true
+                        }}
+                    ],
+                    "trackTexturePaintable": false
+                }},
+                "modelPosOffset": {{
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                }},
+                "wheelPosition": 1,
+                "customLength": 2.0,
+                "flipModel": true,
+                "lockToWagonBody": false
+            }}''')
         
         for i in wheelindices:
             keatext.write(f''',
-			{{
-				"detailName": "{i}",
-				"usePreset": false,
-				"modPresetName": "wheelPreset_freight_default",
-				"preset": {{
-					"m_FileID": 0,
-					"m_PathID": 0
-				}},
-				"presetTextureOverride": {{
-					"assetName": "None",
-					"variantOriginalAssetName": "None",
-					"useVariantOriginalAsset": false
-				}},
-				"materialOverride": {{
-					"m_FileID": 0,
-					"m_PathID": 0
-				}},
-				"customModel": {{
-					"meshes": [
-						{{
-							"name": "Main",
-							"mesh": {{
-								"m_FileID": 0,
-								"m_PathID": 0
-							}},
-							"meshRef": {{
-								"assetName": "quickMod_model_wheels_extra{i}.obj",
-								"variantOriginalAssetName": "None",
-								"useVariantOriginalAsset": false
-							}},
-							"materialType": 0,
-							"material": {{
-								"m_FileID": 0,
-								"m_PathID": 0
-							}},
-							"castShadows": true,
-							"texture": {{
-								"m_FileID": 0,
-								"m_PathID": 0
-							}},
-							"textureRef": {{
-								"assetName": "quickMod_texture.png",
-								"variantOriginalAssetName": "None",
-								"useVariantOriginalAsset": false
-							}},
-							"colorCode": {{
-								"m_FileID": 0,
-								"m_PathID": 0
-							}},
-							"colorCodeRef": {{
-								"colorCodeRaw": ""
-							}},
-							"paintable": false,
-							"animation": {{
-								"clipIndex": 0,
-								"wrapMode": 2,
-								"playSpeed": 1.0
-							}},
-							"useLegacyModelInvert": false
-						}}
-					],
-					"trackTexturePaintable": false
-				}},
-				"modelPosOffset": {{
-					"x": 0.0,
-					"y": 0.0,
-					"z": 0.0
-				}},
-				"wheelPosition": 2,
-				"customLength": {modwheeloffsets[i]},
-				"flipModel": false,
-				"lockToWagonBody": {"true" if modpivotparent == str(i) else "false"}
-			}}''')
+            {{
+                "detailName": "{i}",
+                "usePreset": false,
+                "modPresetName": "wheelPreset_freight_default",
+                "preset": {{
+                    "m_FileID": 0,
+                    "m_PathID": 0
+                }},
+                "presetTextureOverride": {{
+                    "assetName": "None",
+                    "variantOriginalAssetName": "None",
+                    "useVariantOriginalAsset": false
+                }},
+                "materialOverride": {{
+                    "m_FileID": 0,
+                    "m_PathID": 0
+                }},
+                "customModel": {{
+                    "meshes": [
+                        {{
+                            "name": "Main",
+                            "mesh": {{
+                                "m_FileID": 0,
+                                "m_PathID": 0
+                            }},
+                            "meshRef": {{
+                                "assetName": "quickMod_model_wheels_extra{i}.obj",
+                                "variantOriginalAssetName": "None",
+                                "useVariantOriginalAsset": false
+                            }},
+                            "materialType": 0,
+                            "material": {{
+                                "m_FileID": 0,
+                                "m_PathID": 0
+                            }},
+                            "castShadows": true,
+                            "texture": {{
+                                "m_FileID": 0,
+                                "m_PathID": 0
+                            }},
+                            "textureRef": {{
+                                "assetName": "quickMod_texture.png",
+                                "variantOriginalAssetName": "None",
+                                "useVariantOriginalAsset": false
+                            }},
+                            "colorCode": {{
+                                "m_FileID": 0,
+                                "m_PathID": 0
+                            }},
+                            "colorCodeRef": {{
+                                "colorCodeRaw": ""
+                            }},
+                            "paintable": false,
+                            "animation": {{
+                                "clipIndex": 0,
+                                "wrapMode": 2,
+                                "playSpeed": 1.0
+                            }},
+                            "useLegacyModelInvert": true
+                        }}
+                    ],
+                    "trackTexturePaintable": false
+                }},
+                "modelPosOffset": {{
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                }},
+                "wheelPosition": 2,
+                "customLength": {modwheeloffsets[i]},
+                "flipModel": true,
+                "lockToWagonBody": {"true" if modpivotparent == str(i) else "false"}
+            }}''')
         
         keatext.write(f'''
-		],
-		"couplerData": [
-			{{
-				"detailName": "Back coupler",
-				"usePreset": false,
-				"modPresetName": "couplerPreset_default",
-				"preset": {{
-					"m_FileID": 0,
-					"m_PathID": 0
-				}},
-				"presetTextureOverride": {{
-					"assetName": "None",
-					"variantOriginalAssetName": "None",
-					"useVariantOriginalAsset": false
-				}},
-				"materialOverride": {{
-					"m_FileID": 0,
-					"m_PathID": 0
-				}},
-				"customModel": {{
-					"meshes": [
+        ],
+        "couplerData": [
+            {{
+                "detailName": "Back coupler",
+                "usePreset": false,
+                "modPresetName": "couplerPreset_default",
+                "preset": {{
+                    "m_FileID": 0,
+                    "m_PathID": 0
+                }},
+                "presetTextureOverride": {{
+                    "assetName": "None",
+                    "variantOriginalAssetName": "None",
+                    "useVariantOriginalAsset": false
+                }},
+                "materialOverride": {{
+                    "m_FileID": 0,
+                    "m_PathID": 0
+                }},
+                "customModel": {{
+                    "meshes": [
                         {{
-							"name": "Main",
-							"mesh": {{
-								"m_FileID": 0,
-								"m_PathID": 0
-							}},
-							"meshRef": {{
-								"assetName": "quickMod_model_couple_back.obj",
-								"variantOriginalAssetName": "None",
-								"useVariantOriginalAsset": false
-							}},
-							"materialType": 0,
-							"material": {{
-								"m_FileID": 0,
-								"m_PathID": 0
-							}},
-							"castShadows": true,
-							"texture": {{
-								"m_FileID": 0,
-								"m_PathID": 0
-							}},
-							"textureRef": {{
-								"assetName": "quickMod_texture.png",
-								"variantOriginalAssetName": "None",
-								"useVariantOriginalAsset": false
-							}},
-							"colorCode": {{
-								"m_FileID": 0,
-								"m_PathID": 0
-							}},
-							"colorCodeRef": {{
-								"colorCodeRaw": ""
-							}},
-							"paintable": false,
-							"animation": {{
-								"clipIndex": 0,
-								"wrapMode": 2,
-								"playSpeed": 1.0
-							}},
-							"useLegacyModelInvert": false
-						}}
+                            "name": "Main",
+                            "mesh": {{
+                                "m_FileID": 0,
+                                "m_PathID": 0
+                            }},
+                            "meshRef": {{
+                                "assetName": "quickMod_model_couple_back.obj",
+                                "variantOriginalAssetName": "None",
+                                "useVariantOriginalAsset": false
+                            }},
+                            "materialType": 0,
+                            "material": {{
+                                "m_FileID": 0,
+                                "m_PathID": 0
+                            }},
+                            "castShadows": true,
+                            "texture": {{
+                                "m_FileID": 0,
+                                "m_PathID": 0
+                            }},
+                            "textureRef": {{
+                                "assetName": "quickMod_texture.png",
+                                "variantOriginalAssetName": "None",
+                                "useVariantOriginalAsset": false
+                            }},
+                            "colorCode": {{
+                                "m_FileID": 0,
+                                "m_PathID": 0
+                            }},
+                            "colorCodeRef": {{
+                                "colorCodeRaw": ""
+                            }},
+                            "paintable": false,
+                            "animation": {{
+                                "clipIndex": 0,
+                                "wrapMode": 2,
+                                "playSpeed": 1.0
+                            }},
+                            "useLegacyModelInvert": true
+                        }}
                     ],
-					"trackTexturePaintable": false
-				}},
-				"modelPosOffset": {{
-					"x": 0.0,
-					"y": 0.0,
-					"z": 0.0
-				}},
-				"useCustomOffset": true,
-				"couplerOffset": {modcoupleroffset}
-			}},
-			{{
-				"detailName": "Front coupler",
-				"usePreset": false,
-				"modPresetName": "couplerPreset_default",
-				"preset": {{
-					"m_FileID": 0,
-					"m_PathID": 0
-				}},
-				"presetTextureOverride": {{
-					"assetName": "None",
-					"variantOriginalAssetName": "None",
-					"useVariantOriginalAsset": false
-				}},
-				"materialOverride": {{
-					"m_FileID": 0,
-					"m_PathID": 0
-				}},
-				"customModel": {{
-					"meshes": [
+                    "trackTexturePaintable": false
+                }},
+                "modelPosOffset": {{
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                }},
+                "useCustomOffset": true,
+                "couplerOffset": {modcoupleroffset}
+            }},
+            {{
+                "detailName": "Front coupler",
+                "usePreset": false,
+                "modPresetName": "couplerPreset_default",
+                "preset": {{
+                    "m_FileID": 0,
+                    "m_PathID": 0
+                }},
+                "presetTextureOverride": {{
+                    "assetName": "None",
+                    "variantOriginalAssetName": "None",
+                    "useVariantOriginalAsset": false
+                }},
+                "materialOverride": {{
+                    "m_FileID": 0,
+                    "m_PathID": 0
+                }},
+                "customModel": {{
+                    "meshes": [
                         {{
-							"name": "Main",
-							"mesh": {{
-								"m_FileID": 0,
-								"m_PathID": 0
-							}},
-							"meshRef": {{
-								"assetName": "quickMod_model_couple_front.obj",
-								"variantOriginalAssetName": "None",
-								"useVariantOriginalAsset": false
-							}},
-							"materialType": 0,
-							"material": {{
-								"m_FileID": 0,
-								"m_PathID": 0
-							}},
-							"castShadows": true,
-							"texture": {{
-								"m_FileID": 0,
-								"m_PathID": 0
-							}},
-							"textureRef": {{
-								"assetName": "quickMod_texture.png",
-								"variantOriginalAssetName": "None",
-								"useVariantOriginalAsset": false
-							}},
-							"colorCode": {{
-								"m_FileID": 0,
-								"m_PathID": 0
-							}},
-							"colorCodeRef": {{
-								"colorCodeRaw": ""
-							}},
-							"paintable": false,
-							"animation": {{
-								"clipIndex": 0,
-								"wrapMode": 2,
-								"playSpeed": 1.0
-							}},
-							"useLegacyModelInvert": false
-						}}
+                            "name": "Main",
+                            "mesh": {{
+                                "m_FileID": 0,
+                                "m_PathID": 0
+                            }},
+                            "meshRef": {{
+                                "assetName": "quickMod_model_couple_front.obj",
+                                "variantOriginalAssetName": "None",
+                                "useVariantOriginalAsset": false
+                            }},
+                            "materialType": 0,
+                            "material": {{
+                                "m_FileID": 0,
+                                "m_PathID": 0
+                            }},
+                            "castShadows": true,
+                            "texture": {{
+                                "m_FileID": 0,
+                                "m_PathID": 0
+                            }},
+                            "textureRef": {{
+                                "assetName": "quickMod_texture.png",
+                                "variantOriginalAssetName": "None",
+                                "useVariantOriginalAsset": false
+                            }},
+                            "colorCode": {{
+                                "m_FileID": 0,
+                                "m_PathID": 0
+                            }},
+                            "colorCodeRef": {{
+                                "colorCodeRaw": ""
+                            }},
+                            "paintable": false,
+                            "animation": {{
+                                "clipIndex": 0,
+                                "wrapMode": 2,
+                                "playSpeed": 1.0
+                            }},
+                            "useLegacyModelInvert": true
+                        }}
                     ],
-					"trackTexturePaintable": false
-				}},
-				"modelPosOffset": {{
-					"x": 0.0,
-					"y": 0.0,
-					"z": 0.0
-				}},
-				"useCustomOffset": true,
-				"couplerOffset": {modcoupleroffset}
-			}}
-		],
-		"lowDetailMeshes": [],
-		"lights": [],
-		"randomizer": {{
-			"useMaterialOnWheels": false,
-			"modelIndexesToRandomize": [],
-			"randomTexures": [],
-			"randomMeshes": [],
-			"chanceToHideRandomizedMesh": 0
-		}}
-	}},
-	"values": {{
-		"locomotive": {modlocomotive},
-		"length": {modlength},
-		"speedAcc": {modacc},
-		"speedDec": {moddec},
-		"overrideCollision": false,
-		"useDynamicUVsForLivery": true,
-		"useLiveryOnWheels": true,
-		"useLiveryOnlyOnFirstMesh": false,
-		"pivotStyle": {"0" if len(wheelindices) == 0 else "1"}
-	}},
-	"audio": {{
-		"modAudioPresetName": "{soundmap[modsound]}",
-		"enginePreset": {{
-			"m_FileID": 0,
-			"m_PathID": 0
-		}},
-		"engineAudioRef_Start": {{
-			"assetName": "None",
-			"variantOriginalAssetName": "None",
-			"useVariantOriginalAsset": false
-		}},
-		"engineAudioRef_Stop": {{
-			"assetName": "None",
-			"variantOriginalAssetName": "None",
-			"useVariantOriginalAsset": false
-		}},
-		"engineAudioRef_ColdStart": {{
-			"assetName": "None",
-			"variantOriginalAssetName": "None",
-			"useVariantOriginalAsset": false
-		}},
-		"engineAudioRef_Shutdown": {{
-			"assetName": "None",
-			"variantOriginalAssetName": "None",
-			"useVariantOriginalAsset": false
-		}},
-		"engineAudioRef_LoopIdle": {{
-			"assetName": "None",
-			"variantOriginalAssetName": "None",
-			"useVariantOriginalAsset": false
-		}},
-		"engineAudioRef_LoopEngine1": {{
-			"assetName": "None",
-			"variantOriginalAssetName": "None",
-			"useVariantOriginalAsset": false
-		}},
-		"engineAudioRef_LoopEngine2": {{
-			"assetName": "None",
-			"variantOriginalAssetName": "None",
-			"useVariantOriginalAsset": false
-		}},
-		"engineAudioRef_LoopEngine3": {{
-			"assetName": "None",
-			"variantOriginalAssetName": "None",
-			"useVariantOriginalAsset": false
-		}},
-		"engineAudioRef_LoopEngine4": {{
-			"assetName": "None",
-			"variantOriginalAssetName": "None",
-			"useVariantOriginalAsset": false
-		}},
-		"hornAssetType": 0,
-		"modHornPresetName": "hornmap[modhorn]",
-		"hornPreset": {{
-			"m_FileID": 0,
-			"m_PathID": 0
-		}},
-		"hornAudioRef": {{
-			"assetName": "None",
-			"variantOriginalAssetName": "None",
-			"useVariantOriginalAsset": false
-		}},
-		"hornStepAudioRef_Start": {{
-			"assetName": "None",
-			"variantOriginalAssetName": "None",
-			"useVariantOriginalAsset": false
-		}},
-		"hornStepAudioRef_Loop": {{
-			"assetName": "None",
-			"variantOriginalAssetName": "None",
-			"useVariantOriginalAsset": false
-		}},
-		"hornStepAudioRef_Stop": {{
-			"assetName": "None",
-			"variantOriginalAssetName": "None",
-			"useVariantOriginalAsset": false
-		}},
-		"whistleSteamLength": 1.0,
-		"useTrackClicks": false,
-		"muteAudio": false
-	}},
-	"cab": {{
-		"useCabPreset": true,
-		"modCabPresetName": "cabPreset_diesel",
-		"cabOffset": {{
-			"x": {modcontroloffsets[0]},
-			"y": {modcontroloffsets[1]},
-			"z": {modcontroloffsets[2]}
-		}},
-		"spawnOffset": {{
-			"x": 0.0,
-			"y": 0.0,
-			"z": 0.0
-		}},
-		"hornOffset": {{
-			"x": 0.0,
-			"y": 0.0,
-			"z": 0.0
-		}}
-	}},
-	"effects": {{
-		"particleEffects": [],
-		"lightEffects": []
-	}},
-	"addons": {{
-		"plowData": {{
-			"basePosition": {{
-				"x": 0.0,
-				"y": 0.0,
-				"z": 0.0
-			}},
-			"baseScale": 0.0,
-			"flipModel": false
-		}},
-		"pantographData": {{
-			"basePosition": {{
-				"x": 0.0,
-				"y": 0.0,
-				"z": 0.0
-			}},
-			"baseScale": 0.0,
-			"flipModel": false
-		}},
-		"pantographAltData": {{
-			"basePosition": {{
-				"x": 0.0,
-				"y": 0.0,
-				"z": 0.0
-			}},
-			"baseScale": 0.0,
-			"flipModel": false
-		}},
-		"useAltPantograph": false
-	}}
+                    "trackTexturePaintable": false
+                }},
+                "modelPosOffset": {{
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                }},
+                "useCustomOffset": true,
+                "couplerOffset": {modcoupleroffset}
+            }}
+        ],
+        "lowDetailMeshes": [],
+        "lights": [],
+        "randomizer": {{
+            "useMaterialOnWheels": false,
+            "modelIndexesToRandomize": [],
+            "randomTexures": [],
+            "randomMeshes": [],
+            "chanceToHideRandomizedMesh": 0
+        }}
+    }},
+    "values": {{
+        "locomotive": {modlocomotive},
+        "length": {modlength},
+        "speedAcc": {modacc},
+        "speedDec": {moddec},
+        "overrideCollision": false,
+        "useDynamicUVsForLivery": true,
+        "useLiveryOnWheels": true,
+        "useLiveryOnlyOnFirstMesh": false,
+        "pivotStyle": {"0" if len(wheelindices) == 0 else "1"}
+    }},
+    "audio": {{
+        "modAudioPresetName": "{soundmap[modsound]}",
+        "enginePreset": {{
+            "m_FileID": 0,
+            "m_PathID": 0
+        }},
+        "engineAudioRef_Start": {{
+            "assetName": "None",
+            "variantOriginalAssetName": "None",
+            "useVariantOriginalAsset": false
+        }},
+        "engineAudioRef_Stop": {{
+            "assetName": "None",
+            "variantOriginalAssetName": "None",
+            "useVariantOriginalAsset": false
+        }},
+        "engineAudioRef_ColdStart": {{
+            "assetName": "None",
+            "variantOriginalAssetName": "None",
+            "useVariantOriginalAsset": false
+        }},
+        "engineAudioRef_Shutdown": {{
+            "assetName": "None",
+            "variantOriginalAssetName": "None",
+            "useVariantOriginalAsset": false
+        }},
+        "engineAudioRef_LoopIdle": {{
+            "assetName": "None",
+            "variantOriginalAssetName": "None",
+            "useVariantOriginalAsset": false
+        }},
+        "engineAudioRef_LoopEngine1": {{
+            "assetName": "None",
+            "variantOriginalAssetName": "None",
+            "useVariantOriginalAsset": false
+        }},
+        "engineAudioRef_LoopEngine2": {{
+            "assetName": "None",
+            "variantOriginalAssetName": "None",
+            "useVariantOriginalAsset": false
+        }},
+        "engineAudioRef_LoopEngine3": {{
+            "assetName": "None",
+            "variantOriginalAssetName": "None",
+            "useVariantOriginalAsset": false
+        }},
+        "engineAudioRef_LoopEngine4": {{
+            "assetName": "None",
+            "variantOriginalAssetName": "None",
+            "useVariantOriginalAsset": false
+        }},
+        "hornAssetType": 0,
+        "modHornPresetName": "hornmap[modhorn]",
+        "hornPreset": {{
+            "m_FileID": 0,
+            "m_PathID": 0
+        }},
+        "hornAudioRef": {{
+            "assetName": "None",
+            "variantOriginalAssetName": "None",
+            "useVariantOriginalAsset": false
+        }},
+        "hornStepAudioRef_Start": {{
+            "assetName": "None",
+            "variantOriginalAssetName": "None",
+            "useVariantOriginalAsset": false
+        }},
+        "hornStepAudioRef_Loop": {{
+            "assetName": "None",
+            "variantOriginalAssetName": "None",
+            "useVariantOriginalAsset": false
+        }},
+        "hornStepAudioRef_Stop": {{
+            "assetName": "None",
+            "variantOriginalAssetName": "None",
+            "useVariantOriginalAsset": false
+        }},
+        "whistleSteamLength": 1.0,
+        "useTrackClicks": false,
+        "muteAudio": false
+    }},
+    "cab": {{
+        "useCabPreset": true,
+        "modCabPresetName": "cabPreset_diesel",
+        "cabOffset": {{
+            "x": {modcontroloffsets[0]},
+            "y": {modcontroloffsets[1]},
+            "z": {modcontroloffsets[2]}
+        }},
+        "spawnOffset": {{
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+        }},
+        "hornOffset": {{
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+        }}
+    }},
+    "effects": {{
+        "particleEffects": [],
+        "lightEffects": []
+    }},
+    "addons": {{
+        "plowData": {{
+            "basePosition": {{
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }},
+            "baseScale": 0.0,
+            "flipModel": false
+        }},
+        "pantographData": {{
+            "basePosition": {{
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }},
+            "baseScale": 0.0,
+            "flipModel": false
+        }},
+        "pantographAltData": {{
+            "basePosition": {{
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }},
+            "baseScale": 0.0,
+            "flipModel": false
+        }},
+        "useAltPantograph": false
+    }}
 }}''')
 
         keatext.close()
-	    
+
         lqm = os.path.join(self.directory, "legacyQuickMod.kea")
         mtx = os.path.join(self.directory, "mod.txt")
-        print(True)
         with zipfile.ZipFile(os.path.join(self.directory, "backup.zip"), 'w') as zip:
             if os.path.exists(lqm):
                 zip.write(lqm)
@@ -801,9 +833,9 @@ class QTTC_OT_Convert(Operator):
                 os.remove(mtx)
 
         os.rename(self.directory, \
-			os.path.join( \
-				os.path.dirname( \
-					os.path.dirname(self.directory)), \
-						f"wagon_{modname}_{keaid}"))
+            os.path.join( \
+                os.path.dirname( \
+                    os.path.dirname(self.directory)), \
+                        f"wagon_{modname}_{keaid}"))
 
         return {'FINISHED'}
