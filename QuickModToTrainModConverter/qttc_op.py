@@ -24,13 +24,13 @@ class QTTC_OT_Convert(Operator):
             "quickMod_model_wheels_front.obj"]
         for i in musthave:
             if not os.path.exists(os.path.join(self.directory, i)):
-                self.report(type='ERROR_INVALID_CONTEXT', message="missing one or more file")
-                return 'CANCELLED'
+                self.report(type={'ERROR_INVALID_CONTEXT'}, message="missing one or more file")
+                return {'CANCELLED'}
 
         bpy.ops.object.mode_set(mode='OBJECT')
         if len(bpy.context.visible_objects) > 0:
-            self.report(type='ERROR_INVALID_CONTEXT', message="scene contains objects")
-            return 'CANCELLED'
+            self.report(type={'ERROR_INVALID_CONTEXT'}, message="scene contains objects")
+            return {'CANCELLED'}
         
         bpy.context.scene.tool_settings.transform_pivot_point = 'CURSOR'
         bpy.ops.view3d.snap_cursor_to_center()
