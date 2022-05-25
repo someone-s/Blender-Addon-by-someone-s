@@ -3,6 +3,7 @@ import bpy
 import random
 import zipfile
 import math
+import mathutils
 from bpy.types import Operator
 
 class QTTC_OT_Convert(Operator):
@@ -12,11 +13,16 @@ class QTTC_OT_Convert(Operator):
 
     directory: bpy.props.StringProperty(name="Directory", subtype='DIR_PATH')
 
+    @classmethod
+    def poll(cls, context):
+        return  context.mode == 'OBJECT' and \
+                context.area.type == 'VIEW_3D'
+
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
-
-    def execute(self, convert):
+    
+    def execute(self, context):
         musthave = [
             "quickMod_model_couple_back.obj",
             "quickMod_model_couple_front.obj",
@@ -27,30 +33,25 @@ class QTTC_OT_Convert(Operator):
                 self.report({'ERROR_INVALID_CONTEXT'}, "missing one or more file")
                 return {'CANCELLED'}
 
-        if bpy.context.mode != 'OBJECT':
-            self.report({'ERROR_INVALID_CONTEXT'}, "not in object mode")
-            return {'CANCELLED'}
-        
-        if len(bpy.context.visible_objects) > 0:
-            self.report({'ERROR_INVALID_CONTEXT'}, "scene contains objects")
-            return {'CANCELLED'}
-        
+        bpy.ops.object.select_all(action='SELECT')
+        bpy.ops.object.delete(use_global=False)
+
         bpy.context.scene.tool_settings.transform_pivot_point = 'CURSOR'
         bpy.ops.view3d.snap_cursor_to_center()
         
         cbf = os.path.join(self.directory, "quickMod_model_couple_back.obj")
         bpy.ops.import_scene.obj(filepath=cbf)
-        bpy.ops.action.select_all()
+        bpy.ops.object.select_all(action='SELECT')
         bpy.ops.transform.rotate(value=math.pi)
         bpy.ops.export_scene.obj(filepath=cbf)
-        bpy.ops.action.delete()
+        bpy.ops.object.delete(use_global=False)
         
         cff = os.path.join(self.directory, "quickMod_model_couple_front.obj")
         bpy.ops.import_scene.obj(filepath=cff)
-        bpy.ops.action.select_all()
+        bpy.ops.object.select_all(action='SELECT')
         bpy.ops.transform.rotate(value=math.pi)
         bpy.ops.export_scene.obj(filepath=cff)
-        bpy.ops.action.delete()
+        bpy.ops.object.delete(use_global=False)
 
         bodypath = os.path.join(self.directory, "quickMod_model_body.obj")
         bodyindices = []
