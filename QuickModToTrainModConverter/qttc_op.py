@@ -143,7 +143,7 @@ class QTTC_OT_Convert(Operator):
             elif l.startswith('material'):
                 t = l.removeprefix('material').removesuffix('\n').split()
                 if len(t) == 1:
-                    modmaterials[0] = int(t[0])
+                    modmaterials[0] = t[0]
                 else:
                     modmaterials[int(t[0])] = t[1]
         modtext.close()
